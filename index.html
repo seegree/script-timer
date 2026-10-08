@@ -5,11 +5,157 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Script Timer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    // Apply saved theme before first paint to avoid a flash
+    try {
+      var savedTheme = localStorage.getItem("script-timer-theme");
+      if (savedTheme === "light" || savedTheme === "dark") document.documentElement.setAttribute("data-theme", savedTheme);
+    } catch (e) {}
+  </script>
   <style>
+    :root {
+      --bg: #F6F7F9;
+      --surface: #FFFFFF;
+      --surface-2: #F0F2F5;
+      --border: #E1E5EA;
+      --border-strong: #C9D0D8;
+      --text: #161A1F;
+      --text-2: #4A5563;
+      --text-3: #7A8594;
+      --accent: #2F6FD0;
+      --danger: #C23A5A;
+      --warn: #B07A16;
+      --ok: #2E9460;
+      --track-gap: #FFFFFF;
+      --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+      --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0D0F11;
+        --surface: #13161B;
+        --surface-2: #1A1E25;
+        --border: #232932;
+        --border-strong: #323A46;
+        --text: #E6EAEF;
+        --text-2: #A3AEBC;
+        --text-3: #6B7787;
+        --accent: #5B9BEA;
+        --danger: #E86A87;
+        --warn: #E0B04F;
+        --ok: #5CC48C;
+        --track-gap: #13161B;
+        --shadow: none;
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0D0F11;
+      --surface: #13161B;
+      --surface-2: #1A1E25;
+      --border: #232932;
+      --border-strong: #323A46;
+      --text: #E6EAEF;
+      --text-2: #A3AEBC;
+      --text-3: #6B7787;
+      --accent: #5B9BEA;
+      --danger: #E86A87;
+      --warn: #E0B04F;
+      --ok: #5CC48C;
+      --track-gap: #13161B;
+      --shadow: none;
+      color-scheme: dark;
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0D0F11; }
-    textarea:focus { border-color: #2A3040 !important; }
+    html, body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+    button { font: inherit; color: inherit; }
+
+    /* Header */
+    .header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 24px; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); flex-shrink: 0; transition: background 0.2s; }
+    .status-dot.live { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent); }
+    .brand-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+    .pill { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+    .header-actions { display: flex; gap: 6px; }
+    .icon-btn { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); cursor: pointer; font-size: 14px; transition: border-color 0.15s, color 0.15s; }
+    .icon-btn:hover, .icon-btn[aria-pressed="true"] { border-color: var(--border-strong); color: var(--text); }
+
+    /* Help */
+    .help { max-width: 1440px; margin: 16px auto 0; padding: 0 24px; }
+    .help-inner { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; font-size: 13px; line-height: 1.65; color: var(--text-2); box-shadow: var(--shadow); }
+    .help-inner h2 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .help-inner ul { list-style: none; margin: 6px 0; }
+    .help-inner li::before { content: "•"; color: var(--text-3); margin-right: 8px; }
+    .help-inner code { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+
+    /* Layout */
+    .main { max-width: 1440px; margin: 0 auto; padding: 20px 24px 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    @media (min-width: 960px) {
+      .main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+      .editor-panel { position: sticky; top: 77px; height: calc(100vh - 97px); }
+      .editor-panel textarea { flex: 1; min-height: 0; max-height: none; resize: none; }
+    }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); min-height: 49px; }
+    .label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+    .text-btn { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 500; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+    .text-btn:hover { border-color: var(--border-strong); background: var(--surface-2); }
+    .text-btn.accent { color: var(--accent); }
+    .text-btn.danger { color: var(--danger); }
+
+    /* Editor */
+    .editor-panel { display: flex; flex-direction: column; }
+    .editor-panel textarea { display: block; width: 100%; min-height: 240px; max-height: 60vh; resize: vertical; background: transparent; border: none; outline: none; color: var(--text); padding: 16px; font-family: var(--mono); font-size: 13px; line-height: 1.7; border-radius: 0 0 12px 12px; }
+    .editor-panel textarea::placeholder { color: var(--text-3); }
+    .editor-panel:focus-within { border-color: var(--border-strong); }
+
+    /* Results */
+    .results { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+    .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stat { padding: 16px; border-right: 1px solid var(--border); min-width: 0; }
+    .stat:last-child { border-right: none; }
+    .stat-value { font-family: var(--mono); font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 4px; white-space: nowrap; }
+    .stat-value.ok { color: var(--ok); }
+    @media (max-width: 480px) { .stat { padding: 12px; } .stat-value { font-size: 20px; } }
+
+    .timeline { padding: 16px; }
+    .track { display: flex; height: 44px; border-radius: 8px; overflow: hidden; background: var(--surface-2); }
+    .seg { display: flex; align-items: center; justify-content: center; min-width: 2px; cursor: default; transition: opacity 0.15s, filter 0.15s; }
+    .seg + .seg { border-left: 2px solid var(--track-gap); }
+    .seg span { font-size: 11px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 8px; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+    .track.has-hover .seg:not(.active) { opacity: 0.35; }
+    .ticks { display: flex; justify-content: space-between; margin-top: 6px; font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+
+    .sections { list-style: none; padding: 6px; }
+    .row { display: grid; grid-template-columns: 4px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 10px; border-radius: 8px; transition: background 0.15s; }
+    .row.active { background: var(--surface-2); }
+    .row-bar { width: 4px; align-self: stretch; border-radius: 2px; }
+    .row-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .row-title input { flex: 1; min-width: 60px; background: transparent; border: 1px solid transparent; border-radius: 4px; margin-left: -5px; padding: 2px 4px; font: inherit; font-size: 14px; font-weight: 600; color: var(--text); outline: none; text-overflow: ellipsis; }
+    .row-title input:hover { border-color: var(--border); }
+    .row-title input:focus { border-color: var(--accent); background: var(--surface); }
+    .row-meta { display: flex; align-items: center; gap: 10px; margin-top: 4px; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+    .share { flex: 0 1 120px; height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+    .share > div { height: 100%; border-radius: 2px; }
+    .row-time { font-family: var(--mono); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+    .flag { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; padding: 2px 6px; border-radius: 4px; white-space: nowrap; border: 1px solid; }
+    .flag.heavy { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+    .flag.thin { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); background: color-mix(in srgb, var(--warn) 10%, transparent); }
+
+    .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 64px 24px; color: var(--text-3); }
+    .empty-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--surface-2); color: var(--text-2); font-size: 16px; }
+    .empty-title { font-size: 14px; font-weight: 600; color: var(--text-2); }
+    .empty-body { font-size: 13px; max-width: 320px; line-height: 1.6; }
+
+    @media (max-width: 640px) {
+      .header, .main, .help { padding-left: 16px; padding-right: 16px; }
+      .main { padding-top: 16px; gap: 16px; }
+    }
   </style>
 </head>
 <body>
@@ -17,14 +163,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script>
-const { useState, useMemo, useCallback } = React;
+const { useState, useMemo, useCallback, useEffect } = React;
 
 const WORDS_PER_MINUTE = 150;
+const THEME_KEY = "script-timer-theme";
 
+// Mid-saturation hues that read on both light and dark backgrounds with white labels
 const SECTION_COLORS = [
-  "#4A90D9", "#D94A6B", "#50B87A", "#D9A64A", "#9B59B6",
-  "#E67E22", "#1ABC9C", "#E74C3C", "#3498DB", "#2ECC71",
-  "#F39C12", "#8E44AD", "#16A085", "#C0392B", "#2980B9",
+  "#3F7FD0", "#C9466A", "#3E9E6A", "#C28A2E", "#8A55B0",
+  "#D06A26", "#1F9A86", "#C84040", "#2F8FC4", "#4AA052",
+  "#B8861C", "#7A4AA8", "#178A78", "#A83A30", "#2A6FA8",
 ];
 
 function formatTime(seconds) {
@@ -99,11 +247,37 @@ function countWords(text) {
 
 const SAMPLE_SCRIPT = "INTRODUCTION\nWelcome to this overview of our latest product release. We've been working hard to bring you a solution that addresses the core challenges facing modern engineering teams. In this video, we'll walk you through everything you need to know to get started and show you why this release matters.\n\nKEY FEATURES\nThe new simulation engine runs three times faster than its predecessor. We've also added real-time collaboration, so your entire team can work on the same model simultaneously. The updated interface puts your most-used tools front and center.\n\nDEMO\nWatch as we set up a new project from scratch. First, we select our template. Then we import our data. The system automatically configures the optimal parameters. Notice how the results render in real time as we adjust variables.\n\nUSE CASES\nEngineering teams at automotive companies use this for crash simulation. Aerospace firms rely on it for computational fluid dynamics. And university researchers have adopted it for teaching complex mathematical concepts to students in ways that were never before possible with traditional tools.\n\nCALL TO ACTION\nStart your free trial today. Visit mathworks.com/trial to get started. Our team is standing by to help you onboard. Don't forget to subscribe to our channel for more product updates and tutorials. And if you found this video helpful, please share it with your colleagues who might benefit from learning about these powerful new capabilities we've introduced.";
 
+function readTheme() {
+  try {
+    const t = localStorage.getItem(THEME_KEY);
+    return t === "light" || t === "dark" ? t : "system";
+  } catch (e) {
+    return "system";
+  }
+}
+
 function ScriptTimer() {
   const [rawText, setRawText] = useState("");
   const [editedSections, setEditedSections] = useState(null);
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [theme, setTheme] = useState(readTheme);
+
+  useEffect(function() {
+    const rootEl = document.documentElement;
+    if (theme === "system") rootEl.removeAttribute("data-theme");
+    else rootEl.setAttribute("data-theme", theme);
+    try {
+      if (theme === "system") localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, theme);
+    } catch (e) {}
+  }, [theme]);
+
+  const cycleTheme = function() {
+    setTheme(theme === "system" ? "light" : theme === "light" ? "dark" : "system");
+  };
+  const themeIcon = theme === "light" ? "☀" : theme === "dark" ? "☾" : "◐";
+  const themeLabel = "Theme: " + theme + " (click to change)";
 
   const autoSections = useMemo(function() { return detectSections(rawText); }, [rawText]);
   const sections = editedSections || autoSections;
@@ -136,124 +310,145 @@ function ScriptTimer() {
   };
 
   const hasContent = rawText.trim().length > 0;
+  const showResults = hasContent && analysisData.length > 0;
 
   // Helper to create elements without JSX
   const h = React.createElement;
 
-  return h("div", { style: { minHeight: "100vh", background: "#0D0F11", color: "#E0E4E8", fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace" } },
+  const hoverProps = function(i) {
+    return {
+      onMouseEnter: function() { setHoveredIndex(i); },
+      onMouseLeave: function() { setHoveredIndex(null); },
+    };
+  };
+
+  return h(React.Fragment, null,
 
     // Header
-    h("div", { style: { borderBottom: "1px solid #1E2328", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" } },
-      h("div", { style: { display: "flex", alignItems: "center", gap: "12px" } },
-        h("div", { style: { width: "8px", height: "8px", borderRadius: "50%", background: hasContent ? "#50B87A" : "#555", boxShadow: hasContent ? "0 0 8px #50B87A66" : "none" } }),
-        h("span", { style: { fontSize: "13px", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", color: "#8A9BB0" } }, "Script Timer"),
-        h("span", { style: { fontSize: "10px", color: "#4A5568", letterSpacing: "1px" } }, "150 WPM")
+    h("header", { className: "header" },
+      h("div", { className: "brand" },
+        h("div", { className: "status-dot" + (hasContent ? " live" : "") }),
+        h("span", { className: "brand-name" }, "Script Timer"),
+        h("span", { className: "pill" }, WORDS_PER_MINUTE + " WPM")
       ),
-      h("div", { style: { display: "flex", gap: "8px", alignItems: "center" } },
-        h("button", { onClick: function() { setShowHelp(!showHelp); }, style: { background: "transparent", border: "1px solid #2A3040", color: "#8A9BB0", width: "24px", height: "24px", fontSize: "12px", borderRadius: "4px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" } }, "?")
+      h("div", { className: "header-actions" },
+        h("button", { className: "icon-btn", onClick: cycleTheme, title: themeLabel, "aria-label": themeLabel }, themeIcon),
+        h("button", { className: "icon-btn", onClick: function() { setShowHelp(!showHelp); }, title: "How it works", "aria-label": "How it works", "aria-pressed": showHelp }, "?")
       )
     ),
 
     // Help panel
-    showHelp && h("div", { style: { margin: "12px 24px", padding: "16px", background: "#141820", border: "1px solid #1E2328", borderRadius: "6px", fontSize: "12px", lineHeight: 1.7, color: "#8A9BB0" } },
-      h("div", { style: { fontWeight: 700, color: "#E0E4E8", marginBottom: "8px" } }, "How it works"),
-      h("div", null, "Paste a script and sections are auto-detected from:"),
-      h("div", { style: { padding: "4px 0 4px 12px", color: "#6B7B8F" } },
-        h("span", null, "\u2022 "), h("span", { style: { color: "#4A90D9" } }, "ALL CAPS LINES"), " \u2014 treated as section headers", h("br"),
-        h("span", null, "\u2022 "), h("span", { style: { color: "#4A90D9" } }, "Lines ending with a colon:"), " \u2014 treated as section headers", h("br"),
-        h("span", null, "\u2022 "), h("span", { style: { color: "#4A90D9" } }, "# Markdown headers"), " \u2014 treated as section headers", h("br"),
-        h("span", null, "\u2022 "), h("span", { style: { color: "#4A90D9" } }, "[Bracketed labels]"), " \u2014 treated as section headers"
-      ),
-      h("div", { style: { marginTop: "6px" } }, "Click any section title to rename it. Edit the script text directly to add, remove, or move section breaks.")
+    showHelp && h("div", { className: "help" },
+      h("div", { className: "help-inner" },
+        h("h2", null, "How it works"),
+        h("div", null, "Paste a script and sections are auto-detected from:"),
+        h("ul", null,
+          h("li", null, h("code", null, "ALL CAPS LINES")),
+          h("li", null, h("code", null, "Lines ending with a colon:")),
+          h("li", null, h("code", null, "# Markdown headers")),
+          h("li", null, h("code", null, "[Bracketed labels]"))
+        ),
+        h("div", null, "Click any section title to rename it. Edit the script text directly to add, remove, or move section breaks.")
+      )
     ),
 
-    h("div", { style: { display: "flex", flexDirection: "column", gap: "0" } },
+    h("main", { className: "main" },
 
-      // Input area
-      h("div", { style: { padding: "16px 24px" } },
-        h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" } },
-          h("span", { style: { fontSize: "10px", color: "#4A5568", letterSpacing: "1px", textTransform: "uppercase" } }, "Script Input"),
-          !hasContent && h("button", { onClick: handleLoadSample, style: { background: "transparent", border: "1px solid #2A3040", color: "#4A90D9", padding: "3px 8px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", letterSpacing: "0.5px" } }, "LOAD SAMPLE"),
-          hasContent && h("button", { onClick: function() { setRawText(""); setEditedSections(null); }, style: { background: "transparent", border: "1px solid #2A3040", color: "#D94A6B", padding: "3px 8px", fontSize: "10px", borderRadius: "3px", cursor: "pointer", letterSpacing: "0.5px" } }, "CLEAR")
+      // Editor
+      h("section", { className: "panel editor-panel" },
+        h("div", { className: "panel-head" },
+          h("span", { className: "label" }, "Script"),
+          hasContent
+            ? h("button", { className: "text-btn danger", onClick: function() { setRawText(""); setEditedSections(null); } }, "Clear")
+            : h("button", { className: "text-btn accent", onClick: handleLoadSample }, "Load sample")
         ),
-        h("textarea", { value: rawText, onChange: function(e) { handlePaste(e.target.value); }, placeholder: "Paste your script here. Use ALL CAPS lines, lines ending with colons, # markdown headers, or [bracketed labels] for section breaks...", style: { width: "100%", minHeight: "160px", maxHeight: "300px", background: "#0A0C0E", border: "1px solid #1E2328", borderRadius: "6px", color: "#C0C8D0", padding: "14px", fontSize: "13px", fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace", resize: "vertical", lineHeight: 1.6, outline: "none", boxSizing: "border-box" } })
+        h("textarea", { value: rawText, onChange: function(e) { handlePaste(e.target.value); }, spellCheck: false, "aria-label": "Script text", placeholder: "Paste your script here.\n\nUse ALL CAPS lines, lines ending with colons, # markdown headers, or [bracketed labels] for section breaks." })
       ),
 
-      // Analysis output
-      hasContent && analysisData.length > 0 && h(React.Fragment, null,
+      // Results
+      h("div", { className: "results" },
+        showResults ? h(React.Fragment, null,
 
-        // Timeline bar
-        h("div", { style: { padding: "8px 24px 16px" } },
-          h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "10px" } },
-            h("span", { style: { fontSize: "10px", color: "#4A5568", letterSpacing: "1px", textTransform: "uppercase" } }, "Timeline"),
-            h("span", { style: { fontSize: "13px", color: "#E0E4E8", fontWeight: 600 } }, totalWords + " words \u2192 " + formatTimeDetailed(totalSeconds) + " total")
+          // Summary + timeline
+          h("section", { className: "panel" },
+            h("div", { className: "summary" },
+              h("div", { className: "stat" },
+                h("div", { className: "label" }, "Runtime"),
+                h("div", { className: "stat-value ok" }, formatTimeDetailed(totalSeconds))
+              ),
+              h("div", { className: "stat" },
+                h("div", { className: "label" }, "Words"),
+                h("div", { className: "stat-value" }, totalWords.toLocaleString())
+              ),
+              h("div", { className: "stat" },
+                h("div", { className: "label" }, "Sections"),
+                h("div", { className: "stat-value" }, analysisData.length)
+              )
+            ),
+            h("div", { className: "timeline", style: { borderTop: "1px solid var(--border)" } },
+              h("div", { className: "track" + (hoveredIndex !== null ? " has-hover" : "") },
+                analysisData.map(function(s, i) {
+                  const pct = totalSeconds > 0 ? (s.seconds / totalSeconds) * 100 : 0;
+                  const isHovered = hoveredIndex === i;
+                  return h("div", Object.assign({
+                    key: i,
+                    className: "seg" + (isHovered ? " active" : ""),
+                    title: s.title + " — " + formatTime(s.seconds),
+                    style: { width: pct + "%", background: s.color }
+                  }, hoverProps(i)),
+                    (isHovered || pct > 8) && h("span", null, s.title)
+                  );
+                })
+              ),
+              h("div", { className: "ticks" },
+                h("span", null, "0:00"),
+                totalSeconds > 30 && h("span", null, formatTimeDetailed(totalSeconds / 2)),
+                h("span", null, formatTimeDetailed(totalSeconds))
+              )
+            )
           ),
-          h("div", { style: { display: "flex", height: "48px", borderRadius: "6px", overflow: "hidden", border: "1px solid #1E2328" } },
-            analysisData.map(function(s, i) {
-              const pct = totalSeconds > 0 ? (s.seconds / totalSeconds) * 100 : 0;
-              const isHovered = hoveredIndex === i;
-              return h("div", {
-                key: i,
-                onMouseEnter: function() { setHoveredIndex(i); },
-                onMouseLeave: function() { setHoveredIndex(null); },
-                style: { width: pct + "%", minWidth: pct > 0 ? "2px" : "0", background: isHovered ? s.color : s.color + "99", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s ease", cursor: "default", position: "relative", borderRight: i < analysisData.length - 1 ? "1px solid #0D0F11" : "none", opacity: hoveredIndex !== null && !isHovered ? 0.4 : 1 }
-              },
-                (isHovered || pct > 6) && h("span", { style: { fontSize: "10px", fontWeight: 600, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.5)", whiteSpace: "nowrap", overflow: isHovered ? "visible" : "hidden", textOverflow: "ellipsis", padding: "0 6px", zIndex: isHovered ? 10 : 1, position: "relative" } }, s.title)
-              );
-            })
-          ),
-          h("div", { style: { display: "flex", justifyContent: "space-between", marginTop: "4px", fontSize: "10px", color: "#3A4558" } },
-            h("span", null, "0:00"),
-            totalSeconds > 30 && h("span", null, formatTimeDetailed(totalSeconds / 2)),
-            h("span", null, formatTimeDetailed(totalSeconds))
-          )
-        ),
 
-        // Section breakdown
-        h("div", { style: { padding: "0 24px 24px" } },
-          h("span", { style: { fontSize: "10px", color: "#4A5568", letterSpacing: "1px", textTransform: "uppercase", display: "block", marginBottom: "10px" } }, "Section Breakdown"),
-          h("div", { style: { display: "flex", flexDirection: "column", gap: "4px" } },
-            analysisData.map(function(s, i) {
-              const pct = totalWords > 0 ? ((s.words / totalWords) * 100).toFixed(1) : "0.0";
-              const isHovered = hoveredIndex === i;
-              const isLong = s.seconds > totalSeconds * 0.35 && analysisData.length > 2;
-              const isShort = s.seconds < 5 && totalSeconds > 30;
+          // Section breakdown
+          h("section", { className: "panel" },
+            h("div", { className: "panel-head" },
+              h("span", { className: "label" }, "Section breakdown")
+            ),
+            h("ul", { className: "sections" },
+              analysisData.map(function(s, i) {
+                const share = totalWords > 0 ? (s.words / totalWords) * 100 : 0;
+                const isHovered = hoveredIndex === i;
+                const isLong = s.seconds > totalSeconds * 0.35 && analysisData.length > 2;
+                const isShort = s.seconds < 5 && totalSeconds > 30;
 
-              return h("div", {
-                key: i,
-                onMouseEnter: function() { setHoveredIndex(i); },
-                onMouseLeave: function() { setHoveredIndex(null); },
-                style: { display: "grid", gridTemplateColumns: "6px 1fr auto", gap: "12px", alignItems: "center", padding: "10px 12px", background: isHovered ? "#141820" : "transparent", borderRadius: "6px", transition: "background 0.15s ease" }
-              },
-                h("div", { style: { width: "6px", height: "6px", borderRadius: "50%", background: s.color, boxShadow: isHovered ? "0 0 8px " + s.color + "66" : "none" } }),
-                h("div", { style: { minWidth: 0 } },
-                  h("div", { style: { display: "flex", alignItems: "center", gap: "8px" } },
-                    h("input", { value: s.title, onChange: function(e) { handleRenameSection(i, e.target.value); }, title: "Click to rename section", style: { background: "transparent", border: "none", color: "#E0E4E8", fontSize: "13px", fontWeight: 600, fontFamily: "'JetBrains Mono', 'SF Mono', 'Fira Code', monospace", padding: "0", outline: "none", width: "100%", minWidth: "60px" } }),
-                    (isLong || isShort) && h("span", { style: { fontSize: "9px", fontWeight: 700, letterSpacing: "0.5px", padding: "2px 6px", borderRadius: "3px", whiteSpace: "nowrap", background: isLong ? "#D94A6B22" : "#D9A64A22", color: isLong ? "#D94A6B" : "#D9A64A", border: "1px solid " + (isLong ? "#D94A6B44" : "#D9A64A44") } }, isLong ? "HEAVY" : "THIN")
+                return h("li", Object.assign({ key: i, className: "row" + (isHovered ? " active" : "") }, hoverProps(i)),
+                  h("div", { className: "row-bar", style: { background: s.color } }),
+                  h("div", { style: { minWidth: 0 } },
+                    h("div", { className: "row-title" },
+                      h("input", { value: s.title, onChange: function(e) { handleRenameSection(i, e.target.value); }, title: "Click to rename section", "aria-label": "Section title" }),
+                      isLong && h("span", { className: "flag heavy", title: "Over 35% of total runtime" }, "HEAVY"),
+                      isShort && h("span", { className: "flag thin", title: "Under 5 seconds" }, "THIN")
+                    ),
+                    h("div", { className: "row-meta" },
+                      h("span", null, s.words + " words"),
+                      h("div", { className: "share" }, h("div", { style: { width: share + "%", background: s.color } })),
+                      h("span", null, share.toFixed(1) + "%")
+                    )
                   ),
-                  h("div", { style: { display: "flex", gap: "12px", marginTop: "4px", fontSize: "11px", color: "#4A5568" } },
-                    h("span", null, s.words + " words"),
-                    h("span", null, pct + "%")
-                  )
-                ),
-                h("div", { style: { textAlign: "right", fontSize: "16px", fontWeight: 700, color: isHovered ? "#fff" : "#C0C8D0", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" } }, formatTime(s.seconds))
-              );
-            })
-          ),
-
-          // Total
-          h("div", { style: { marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #1E2328", display: "grid", gridTemplateColumns: "6px 1fr auto", gap: "12px", alignItems: "center", padding: "12px 12px 0" } },
-            h("div"),
-            h("div", { style: { fontSize: "11px", color: "#8A9BB0", fontWeight: 600 } }, "TOTAL \u2014 " + totalWords + " words across " + analysisData.length + " section" + (analysisData.length !== 1 ? "s" : "")),
-            h("div", { style: { fontSize: "16px", fontWeight: 700, color: "#50B87A", fontVariantNumeric: "tabular-nums" } }, formatTimeDetailed(totalSeconds))
+                  h("div", { className: "row-time" }, formatTime(s.seconds))
+                );
+              })
+            )
           )
         )
-      ),
 
-      // Empty state
-      !hasContent && h("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", color: "#2A3040" } },
-        h("div", { style: { fontSize: "32px", marginBottom: "12px" } }, "\u25B6"),
-        h("div", { style: { fontSize: "12px", letterSpacing: "1px" } }, "PASTE A SCRIPT TO BEGIN")
+        // Empty state
+        : h("section", { className: "panel" },
+            h("div", { className: "empty" },
+              h("div", { className: "empty-icon" }, "▶"),
+              h("div", { className: "empty-title" }, "Paste a script to begin"),
+              h("div", { className: "empty-body" }, "Timing is estimated at " + WORDS_PER_MINUTE + " words per minute, broken down by section.")
+            )
+          )
       )
     )
   );
