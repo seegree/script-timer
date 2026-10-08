@@ -81,6 +81,14 @@
     .status-dot.live { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent); }
     .brand-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
     .pill { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+    .wpm { display: inline-flex; align-items: center; height: 26px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; font-family: var(--mono); font-size: 11px; color: var(--text-2); white-space: nowrap; }
+    .wpm:focus-within { border-color: var(--accent); }
+    .wpm button { width: 24px; height: 100%; background: transparent; border: none; color: var(--text-2); cursor: pointer; font-family: var(--mono); font-size: 13px; line-height: 1; }
+    .wpm button:hover:not(:disabled) { color: var(--text); }
+    .wpm button:disabled { opacity: 0.35; cursor: default; }
+    .wpm input { width: 3.2ch; background: transparent; border: none; outline: none; text-align: right; font: inherit; font-weight: 600; color: var(--text); -moz-appearance: textfield; }
+    .wpm input::-webkit-outer-spin-button, .wpm input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .wpm-unit { padding-left: 4px; }
     .header-actions { display: flex; gap: 6px; }
     .icon-btn { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); cursor: pointer; font-size: 14px; transition: border-color 0.15s, color 0.15s; }
     .icon-btn:hover, .icon-btn[aria-pressed="true"] { border-color: var(--border-strong); color: var(--text); }
@@ -173,7 +181,11 @@
   <script>
 const { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } = React;
 
-const WORDS_PER_MINUTE = 150;
+const DEFAULT_WPM = 150;
+const MIN_WPM = 60;
+const MAX_WPM = 300;
+const WPM_STEP = 5;
+const WPM_KEY = "script-timer-wpm";
 const THEME_KEY = "script-timer-theme";
 
 // Mid-saturation hues that read on both light and dark backgrounds with white labels
@@ -264,12 +276,43 @@ function readTheme() {
   }
 }
 
+function clampWpm(n) {
+  return Math.min(MAX_WPM, Math.max(MIN_WPM, Math.round(n)));
+}
+
+function readWpm() {
+  try {
+    const n = parseInt(localStorage.getItem(WPM_KEY), 10);
+    return isNaN(n) ? DEFAULT_WPM : clampWpm(n);
+  } catch (e) {
+    return DEFAULT_WPM;
+  }
+}
+
 function ScriptTimer() {
   const [rawText, setRawText] = useState("");
   const [editedSections, setEditedSections] = useState(null);
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
   const [theme, setTheme] = useState(readTheme);
+  const [wpm, setWpmState] = useState(readWpm);
+  const [wpmDraft, setWpmDraft] = useState(null);
+
+  const setWpm = function(n) {
+    const next = clampWpm(n);
+    setWpmState(next);
+    setWpmDraft(null);
+    try {
+      if (next === DEFAULT_WPM) localStorage.removeItem(WPM_KEY);
+      else localStorage.setItem(WPM_KEY, String(next));
+    } catch (e) {}
+  };
+  const commitWpmDraft = function() {
+    if (wpmDraft === null) return;
+    const n = parseInt(wpmDraft, 10);
+    if (isNaN(n)) setWpmDraft(null);
+    else setWpm(n);
+  };
 
   useEffect(function() {
     const rootEl = document.documentElement;
@@ -293,10 +336,10 @@ function ScriptTimer() {
   const analysisData = useMemo(function() {
     return sections.map(function(s, i) {
       const words = countWords(s.text);
-      const seconds = (words / WORDS_PER_MINUTE) * 60;
+      const seconds = (words / wpm) * 60;
       return Object.assign({}, s, { words: words, seconds: seconds, color: SECTION_COLORS[i % SECTION_COLORS.length] });
     });
-  }, [sections]);
+  }, [sections, wpm]);
 
   const totalWords = analysisData.reduce(function(sum, s) { return sum + s.words; }, 0);
   const totalSeconds = analysisData.reduce(function(sum, s) { return sum + s.seconds; }, 0);
@@ -351,7 +394,27 @@ function ScriptTimer() {
       h("div", { className: "brand" },
         h("div", { className: "status-dot" + (hasContent ? " live" : "") }),
         h("span", { className: "brand-name" }, "Script Timer"),
-        h("span", { className: "pill" }, WORDS_PER_MINUTE + " WPM")
+        h("div", { className: "wpm", title: "Speaking rate in words per minute (" + MIN_WPM + "\u2013" + MAX_WPM + "). Default " + DEFAULT_WPM + "; double-click to reset.", onDoubleClick: function(e) { if (e.target.tagName !== "BUTTON") setWpm(DEFAULT_WPM); } },
+          h("button", { type: "button", onClick: function() { setWpm(wpm - WPM_STEP); }, disabled: wpm <= MIN_WPM, "aria-label": "Decrease words per minute" }, "\u2212"),
+          h("input", {
+            type: "number", inputMode: "numeric", min: MIN_WPM, max: MAX_WPM, step: WPM_STEP,
+            value: wpmDraft !== null ? wpmDraft : wpm,
+            "aria-label": "Words per minute",
+            onChange: function(e) {
+              const v = e.target.value;
+              setWpmDraft(v);
+              const n = parseInt(v, 10);
+              // Apply live while typing when the value is already in range
+              if (!isNaN(n) && n >= MIN_WPM && n <= MAX_WPM) setWpmState(n);
+            },
+            onBlur: commitWpmDraft,
+            onKeyDown: function(e) {
+              if (e.key === "Enter") e.target.blur();
+            }
+          }),
+          h("span", { className: "wpm-unit" }, "WPM"),
+          h("button", { type: "button", onClick: function() { setWpm(wpm + WPM_STEP); }, disabled: wpm >= MAX_WPM, "aria-label": "Increase words per minute" }, "+")
+        )
       ),
       h("div", { className: "header-actions" },
         h("button", { className: "icon-btn", onClick: cycleTheme, title: themeLabel, "aria-label": themeLabel }, themeIcon),
@@ -370,6 +433,7 @@ function ScriptTimer() {
           h("li", null, h("code", null, "# Markdown headers")),
           h("li", null, h("code", null, "[Bracketed labels]"))
         ),
+        h("div", { style: { marginBottom: "6px" } }, "Set the speaking rate with the WPM control in the header (default " + DEFAULT_WPM + "; double-click it to reset)."),
         h("div", null, "Click any section title to rename it. Edit the script text directly to add, remove, or move section breaks.")
       )
     ),
@@ -468,7 +532,7 @@ function ScriptTimer() {
             h("div", { className: "empty" },
               h("div", { className: "empty-icon" }, "▶"),
               h("div", { className: "empty-title" }, "Paste a script to begin"),
-              h("div", { className: "empty-body" }, "Timing is estimated at " + WORDS_PER_MINUTE + " words per minute, broken down by section.")
+              h("div", { className: "empty-body" }, "Timing is estimated at " + wpm + " words per minute, broken down by section.")
             )
           )
       )
