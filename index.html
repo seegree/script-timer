@@ -97,8 +97,6 @@
     .main { max-width: 1440px; margin: 0 auto; padding: 20px 24px 32px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
     @media (min-width: 960px) {
       .main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
-      .editor-panel { position: sticky; top: 77px; height: calc(100vh - 97px); }
-      .editor-panel textarea { flex: 1; min-height: 0; max-height: none; resize: none; }
     }
     .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
     .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); min-height: 49px; }
@@ -110,7 +108,7 @@
 
     /* Editor */
     .editor-panel { display: flex; flex-direction: column; }
-    .editor-panel textarea { display: block; width: 100%; min-height: 240px; max-height: 60vh; resize: vertical; background: transparent; border: none; outline: none; color: var(--text); padding: 16px; font-family: var(--mono); font-size: 13px; line-height: 1.7; border-radius: 0 0 12px 12px; }
+    .editor-panel textarea { display: block; width: 100%; min-height: 320px; overflow: hidden; resize: none; background: transparent; border: none; outline: none; color: var(--text); padding: 16px; font-family: var(--mono); font-size: 13px; line-height: 1.7; border-radius: 0 0 12px 12px; }
     .editor-panel textarea::placeholder { color: var(--text-3); }
     .editor-panel:focus-within { border-color: var(--border-strong); }
 
@@ -163,7 +161,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script>
-const { useState, useMemo, useCallback, useEffect } = React;
+const { useState, useMemo, useCallback, useEffect, useLayoutEffect, useRef } = React;
 
 const WORDS_PER_MINUTE = 150;
 const THEME_KEY = "script-timer-theme";
@@ -309,6 +307,20 @@ function ScriptTimer() {
     setEditedSections(updated);
   };
 
+  // Grow the editor to fit its text so the whole script is always visible
+  const textareaRef = useRef(null);
+  useLayoutEffect(function() {
+    const fit = function() {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return function() { window.removeEventListener("resize", fit); };
+  }, [rawText]);
+
   const hasContent = rawText.trim().length > 0;
   const showResults = hasContent && analysisData.length > 0;
 
@@ -362,7 +374,7 @@ function ScriptTimer() {
             ? h("button", { className: "text-btn danger", onClick: function() { setRawText(""); setEditedSections(null); } }, "Clear")
             : h("button", { className: "text-btn accent", onClick: handleLoadSample }, "Load sample")
         ),
-        h("textarea", { value: rawText, onChange: function(e) { handlePaste(e.target.value); }, spellCheck: false, "aria-label": "Script text", placeholder: "Paste your script here.\n\nUse ALL CAPS lines, lines ending with colons, # markdown headers, or [bracketed labels] for section breaks." })
+        h("textarea", { ref: textareaRef, value: rawText, onChange: function(e) { handlePaste(e.target.value); }, spellCheck: false, "aria-label": "Script text", placeholder: "Paste your script here.\n\nUse ALL CAPS lines, lines ending with colons, # markdown headers, or [bracketed labels] for section breaks." })
       ),
 
       // Results
