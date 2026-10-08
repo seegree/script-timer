@@ -163,14 +163,17 @@
       .main { padding-top: 16px; gap: 16px; }
     }
 
-    /* Wide screens: page is fixed to the viewport and each column scrolls on its own */
+    /* Wide screens: two fixed frames. The script box fills the left frame and
+       scrolls itself; the readout on the right scrolls on its own. */
     @media (min-width: 960px) {
       html, body { height: 100%; overflow: hidden; }
       #root { height: 100%; display: flex; flex-direction: column; }
       .help { flex-shrink: 0; }
       .main { flex: 1; min-height: 0; width: 100%; padding-top: 0; padding-bottom: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
       .col { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 20px 2px 32px; }
-      .editor-panel .panel-head { position: sticky; top: -20px; z-index: 1; background: var(--surface); border-radius: 12px 12px 0 0; }
+      .col.editor-col { overflow: hidden; display: flex; flex-direction: column; }
+      .editor-panel { flex: 1; min-height: 0; }
+      .editor-panel textarea { flex: 1; min-height: 0; overflow-y: auto; }
     }
   </style>
 </head>
@@ -360,12 +363,14 @@ function ScriptTimer() {
     setEditedSections(updated);
   };
 
-  // Grow the editor to fit its text so the whole script is always visible
+  // On narrow screens, grow the editor to fit its text so the whole script is
+  // visible. On wide screens the editor fills its frame and scrolls itself.
   const textareaRef = useRef(null);
   useLayoutEffect(function() {
     const fit = function() {
       const el = textareaRef.current;
       if (!el) return;
+      if (window.matchMedia("(min-width: 960px)").matches) { el.style.height = ""; return; }
       el.style.height = "auto";
       el.style.height = el.scrollHeight + "px";
     };
@@ -441,7 +446,7 @@ function ScriptTimer() {
     h("main", { className: "main" },
 
       // Editor
-      h("div", { className: "col" }, h("section", { className: "panel editor-panel" },
+      h("div", { className: "col editor-col" }, h("section", { className: "panel editor-panel" },
         h("div", { className: "panel-head" },
           h("span", { className: "label" }, "Script"),
           hasContent
