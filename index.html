@@ -122,23 +122,47 @@
 
     /* Results */
     .results { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-    .summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .summary-panel { container-type: inline-size; }
+    .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .stat { padding: 16px; border-right: 1px solid var(--border); min-width: 0; }
     .stat:last-child { border-right: none; }
-    .stat-value { font-family: var(--mono); font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 4px; white-space: nowrap; }
+    .stat-value { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 4px; white-space: nowrap; }
     .stat-value.ok { color: var(--ok); }
+    .stat-value.over { color: var(--danger); }
+    @container (max-width: 560px) {
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stat:nth-child(2n) { border-right: none; }
+      .stat:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+    }
     @media (max-width: 480px) { .stat { padding: 12px; } .stat-value { font-size: 20px; } }
 
+    /* Target length */
+    .target-input { width: 5.2ch; min-width: 0; background: transparent; border: 1px dashed var(--border-strong); border-radius: 6px; margin-left: -5px; padding: 0 4px; font: inherit; letter-spacing: inherit; color: var(--text); outline: none; }
+    .target-input.set { border-color: transparent; }
+    .target-input:hover, .target-input.set:hover { border-color: var(--border-strong); }
+    .target-input:focus { border: 1px solid var(--accent); background: var(--surface); }
+    .target-input::placeholder { color: var(--text-3); font-weight: 400; }
+    .target-clear { width: 22px; height: 22px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; border-radius: 4px; color: var(--text-3); cursor: pointer; font-size: 14px; }
+    .target-clear:hover { color: var(--text); background: var(--surface-2); }
+    .target-status { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--border); font-size: 13px; font-weight: 500; }
+    .target-status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .target-status.over { color: var(--danger); background: color-mix(in srgb, var(--danger) 7%, transparent); }
+    .target-status.under { color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+    .target-status.on { color: var(--ok); background: color-mix(in srgb, var(--ok) 7%, transparent); }
+
     .timeline { padding: 16px; }
-    .track { display: flex; height: 44px; border-radius: 8px; overflow: hidden; background: var(--surface-2); }
-    .seg { display: flex; align-items: center; justify-content: center; min-width: 2px; cursor: default; transition: opacity 0.15s, filter 0.15s; }
+    .track { position: relative; display: flex; height: 44px; border-radius: 8px; overflow: hidden; background: var(--surface-2); }
+    .seg { display: flex; align-items: center; justify-content: center; min-width: 2px; cursor: pointer; transition: opacity 0.15s, filter 0.15s; }
     .seg + .seg { border-left: 2px solid var(--track-gap); }
     .seg span { font-size: 11px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 8px; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
     .track.has-hover .seg:not(.active) { opacity: 0.35; }
-    .ticks { display: flex; justify-content: space-between; margin-top: 6px; font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+    .over-zone { position: absolute; top: 0; bottom: 0; right: 0; pointer-events: none; background: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.28) 0 4px, transparent 4px 9px); }
+    .target-line { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--text); pointer-events: none; }
+    .ticks { position: relative; display: flex; justify-content: space-between; margin-top: 6px; font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+    .target-tick { position: absolute; top: 0; color: var(--text); font-weight: 600; white-space: nowrap; }
 
     .sections { list-style: none; padding: 6px; }
-    .row { display: grid; grid-template-columns: 4px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 10px; border-radius: 8px; transition: background 0.15s; }
+    .row { display: grid; grid-template-columns: 4px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 10px; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
     .row.active { background: var(--surface-2); }
     .row-bar { width: 4px; align-self: stretch; border-radius: 2px; }
     .row-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -146,6 +170,8 @@
     .row-title input:hover { border-color: var(--border); }
     .row-title input:focus { border-color: var(--accent); background: var(--surface); }
     .row-meta { display: flex; align-items: center; gap: 10px; margin-top: 4px; font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+    .timecode { background: transparent; border: none; padding: 0; font-family: var(--mono); font-size: 12px; color: var(--text-2); cursor: pointer; white-space: nowrap; }
+    .timecode:hover, .timecode:focus-visible { color: var(--accent); text-decoration: underline; }
     .share { flex: 0 1 120px; height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
     .share > div { height: 100%; border-radius: 2px; }
     .row-time { font-family: var(--mono); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
@@ -189,6 +215,7 @@ const MIN_WPM = 60;
 const MAX_WPM = 300;
 const WPM_STEP = 5;
 const WPM_KEY = "script-timer-wpm";
+const TARGET_KEY = "script-timer-target";
 const THEME_KEY = "script-timer-theme";
 
 // Mid-saturation hues that read on both light and dark backgrounds with white labels
@@ -216,9 +243,8 @@ function detectSections(text) {
 
   const lines = text.split("\n");
   const sections = [];
-  let currentTitle = "Untitled Section";
-  let currentLines = [];
-  let sectionStarted = false;
+  let current = null; // { title, start, lines }
+  let offset = 0;
 
   const isHeader = function(line) {
     const trimmed = line.trim();
@@ -238,27 +264,30 @@ function detectSections(text) {
       .trim();
   };
 
+  // Close the open section at a character offset; start/end are positions in
+  // the raw text so a section can be located in the editor.
+  const close = function(endOffset) {
+    if (!current || !current.lines.some(function(l) { return l.trim(); })) return;
+    let end = endOffset;
+    while (end > current.start && /\s/.test(text[end - 1])) end--;
+    sections.push({ title: current.title, text: current.lines.join("\n").trim(), start: current.start, end: end });
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (isHeader(line)) {
-      if (sectionStarted && currentLines.some(function(l) { return l.trim(); })) {
-        sections.push({ title: currentTitle, text: currentLines.join("\n").trim() });
-      }
-      currentTitle = cleanTitle(line);
-      currentLines = [];
-      sectionStarted = true;
+      close(offset);
+      current = { title: cleanTitle(line), start: offset, lines: [] };
     } else {
-      if (!sectionStarted && line.trim()) sectionStarted = true;
-      currentLines.push(line);
+      if (!current && line.trim()) current = { title: "Untitled Section", start: offset, lines: [] };
+      if (current) current.lines.push(line);
     }
+    offset += line.length + 1;
   }
-
-  if (currentLines.some(function(l) { return l.trim(); })) {
-    sections.push({ title: currentTitle, text: currentLines.join("\n").trim() });
-  }
+  close(text.length);
 
   if (sections.length === 0 && text.trim()) {
-    sections.push({ title: "Full Script", text: text.trim() });
+    sections.push({ title: "Full Script", text: text.trim(), start: 0, end: text.length });
   }
 
   return sections;
@@ -292,6 +321,27 @@ function readWpm() {
   }
 }
 
+// Accepts "1:30", "90", "90s", "1m30s", "2m". A bare number is seconds.
+function parseDuration(str) {
+  const v = String(str).trim().toLowerCase().replace(/\s+/g, "");
+  if (!v) return null;
+  let m = v.match(/^(\d+):([0-5]?\d)$/);
+  if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  m = v.match(/^(?:(\d+)m(?:in)?)?(?:(\d+)s(?:ec)?)?$/);
+  if (m && (m[1] || m[2])) return (parseInt(m[1] || "0", 10)) * 60 + parseInt(m[2] || "0", 10);
+  if (/^\d+$/.test(v)) return parseInt(v, 10);
+  return null;
+}
+
+function readTarget() {
+  try {
+    const n = parseInt(localStorage.getItem(TARGET_KEY), 10);
+    return isNaN(n) || n <= 0 ? null : n;
+  } catch (e) {
+    return null;
+  }
+}
+
 function ScriptTimer() {
   const [rawText, setRawText] = useState("");
   const [editedSections, setEditedSections] = useState(null);
@@ -300,6 +350,8 @@ function ScriptTimer() {
   const [theme, setTheme] = useState(readTheme);
   const [wpm, setWpmState] = useState(readWpm);
   const [wpmDraft, setWpmDraft] = useState(null);
+  const [target, setTargetState] = useState(readTarget);
+  const [targetDraft, setTargetDraft] = useState(null);
 
   const setWpm = function(n) {
     const next = clampWpm(n);
@@ -310,6 +362,23 @@ function ScriptTimer() {
       else localStorage.setItem(WPM_KEY, String(next));
     } catch (e) {}
   };
+  const setTarget = function(seconds) {
+    const next = seconds && seconds > 0 ? seconds : null;
+    setTargetState(next);
+    setTargetDraft(null);
+    try {
+      if (next === null) localStorage.removeItem(TARGET_KEY);
+      else localStorage.setItem(TARGET_KEY, String(next));
+    } catch (e) {}
+  };
+  const commitTargetDraft = function() {
+    if (targetDraft === null) return;
+    if (!targetDraft.trim()) { setTarget(null); return; }
+    const n = parseDuration(targetDraft);
+    if (n === null) setTargetDraft(null); // unparseable: revert
+    else setTarget(n);
+  };
+
   const commitWpmDraft = function() {
     if (wpmDraft === null) return;
     const n = parseInt(wpmDraft, 10);
@@ -337,15 +406,26 @@ function ScriptTimer() {
   const sections = editedSections || autoSections;
 
   const analysisData = useMemo(function() {
+    let elapsed = 0;
     return sections.map(function(s, i) {
       const words = countWords(s.text);
       const seconds = (words / wpm) * 60;
-      return Object.assign({}, s, { words: words, seconds: seconds, color: SECTION_COLORS[i % SECTION_COLORS.length] });
+      const startAt = elapsed;
+      elapsed += seconds;
+      return Object.assign({}, s, { words: words, seconds: seconds, startAt: startAt, endAt: elapsed, color: SECTION_COLORS[i % SECTION_COLORS.length] });
     });
   }, [sections, wpm]);
 
   const totalWords = analysisData.reduce(function(sum, s) { return sum + s.words; }, 0);
   const totalSeconds = analysisData.reduce(function(sum, s) { return sum + s.seconds; }, 0);
+
+  // Target comparison. Positive delta = over target.
+  const hasTarget = target !== null;
+  const delta = hasTarget ? totalSeconds - target : 0;
+  const deltaWords = Math.round(Math.abs(delta) * wpm / 60);
+  const targetState = !hasTarget ? null : Math.abs(delta) < 1 ? "on" : delta > 0 ? "over" : "under";
+  const scale = hasTarget ? Math.max(totalSeconds, target) : totalSeconds;
+  const targetPct = hasTarget && scale > 0 ? (target / scale) * 100 : 0;
 
   const handlePaste = useCallback(function(text) {
     setRawText(text);
@@ -378,6 +458,38 @@ function ScriptTimer() {
     window.addEventListener("resize", fit);
     return function() { window.removeEventListener("resize", fit); };
   }, [rawText]);
+
+  // Put the caret at a section's header and scroll it to the top of the editor
+  const jumpToSection = function(section) {
+    const ta = textareaRef.current;
+    if (!ta || section.start === undefined) return;
+
+    // Measure the header's vertical offset with an off-screen copy of the textarea
+    const cs = window.getComputedStyle(ta);
+    const mirror = document.createElement("div");
+    ["fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "tabSize",
+     "paddingTop", "paddingRight", "paddingBottom", "paddingLeft"].forEach(function(p) { mirror.style[p] = cs[p]; });
+    Object.assign(mirror.style, { position: "absolute", visibility: "hidden", top: "0", left: "-9999px", boxSizing: "border-box", width: ta.clientWidth + "px", whiteSpace: "pre-wrap", overflowWrap: "break-word" });
+    mirror.textContent = ta.value.slice(0, section.start);
+    const mark = document.createElement("span");
+    mark.textContent = "\u200b";
+    mirror.appendChild(mark);
+    document.body.appendChild(mirror);
+    const y = mark.offsetTop - parseFloat(cs.paddingTop);
+    document.body.removeChild(mirror);
+
+    ta.focus({ preventScroll: true });
+    ta.setSelectionRange(section.start, section.start);
+    if (ta.scrollHeight > ta.clientHeight + 1) {
+      // Desktop: the editor scrolls itself
+      ta.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    } else {
+      // Narrow screens: the page scrolls; leave room for the sticky header
+      const headerH = document.querySelector(".header").offsetHeight;
+      const top = ta.getBoundingClientRect().top + window.scrollY + parseFloat(cs.paddingTop) + y - headerH - 12;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    }
+  };
 
   const hasContent = rawText.trim().length > 0;
   const showResults = hasContent && analysisData.length > 0;
@@ -439,7 +551,8 @@ function ScriptTimer() {
           h("li", null, h("code", null, "[Bracketed labels]"))
         ),
         h("div", { style: { marginBottom: "6px" } }, "Set the speaking rate with the WPM control in the header (default " + DEFAULT_WPM + "; double-click it to reset)."),
-        h("div", null, "Click any section title to rename it. Edit the script text directly to add, remove, or move section breaks.")
+        h("div", { style: { marginBottom: "6px" } }, "Set a target length (e.g. 1:30, 90, or 1m30s) to see how far over or under you are and roughly how many words to cut or add."),
+        h("div", null, "Click a section row, its timecode, or its timeline segment to jump to it in the script. Click any section title to rename it. Edit the script text directly to add, remove, or move section breaks.")
       )
     ),
 
@@ -461,11 +574,33 @@ function ScriptTimer() {
         showResults ? h(React.Fragment, null,
 
           // Summary + timeline
-          h("section", { className: "panel" },
+          h("section", { className: "panel summary-panel" },
             h("div", { className: "summary" },
               h("div", { className: "stat" },
                 h("div", { className: "label" }, "Runtime"),
-                h("div", { className: "stat-value ok" }, formatTimeDetailed(totalSeconds))
+                h("div", { className: "stat-value " + (targetState === "over" ? "over" : "ok") }, formatTimeDetailed(totalSeconds))
+              ),
+              h("div", { className: "stat" },
+                h("label", { className: "label", htmlFor: "target-input" }, "Target"),
+                h("div", { className: "stat-value" },
+                  h("input", {
+                    id: "target-input",
+                    className: "target-input" + (hasTarget ? " set" : ""),
+                    value: targetDraft !== null ? targetDraft : (hasTarget ? formatTimeDetailed(target) : ""),
+                    placeholder: "\u2013:\u2013\u2013",
+                    title: "Target length, e.g. 1:30, 90 or 1m30s",
+                    "aria-label": "Target length",
+                    inputMode: "numeric", autoComplete: "off", spellCheck: false,
+                    onChange: function(e) { setTargetDraft(e.target.value); },
+                    onFocus: function(e) { e.target.select(); },
+                    onBlur: commitTargetDraft,
+                    onKeyDown: function(e) {
+                      if (e.key === "Enter") e.target.blur();
+                      else if (e.key === "Escape") { setTargetDraft(null); setTimeout(function() { e.target.blur(); }); }
+                    }
+                  }),
+                  hasTarget && targetDraft === null && h("button", { className: "target-clear", onClick: function() { setTarget(null); }, title: "Remove target", "aria-label": "Remove target" }, "\u00D7")
+                )
               ),
               h("div", { className: "stat" },
                 h("div", { className: "label" }, "Words"),
@@ -476,25 +611,35 @@ function ScriptTimer() {
                 h("div", { className: "stat-value" }, analysisData.length)
               )
             ),
+            targetState && h("div", { className: "target-status " + targetState, role: "status" },
+              targetState === "on" ? "On target"
+                : targetState === "over" ? formatTime(delta) + " over target \u2014 cut about " + deltaWords + " word" + (deltaWords === 1 ? "" : "s")
+                : formatTime(-delta) + " under target \u2014 room for about " + deltaWords + " more word" + (deltaWords === 1 ? "" : "s")
+            ),
             h("div", { className: "timeline", style: { borderTop: "1px solid var(--border)" } },
               h("div", { className: "track" + (hoveredIndex !== null ? " has-hover" : "") },
                 analysisData.map(function(s, i) {
-                  const pct = totalSeconds > 0 ? (s.seconds / totalSeconds) * 100 : 0;
+                  const pct = scale > 0 ? (s.seconds / scale) * 100 : 0;
                   const isHovered = hoveredIndex === i;
                   return h("div", Object.assign({
                     key: i,
                     className: "seg" + (isHovered ? " active" : ""),
-                    title: s.title + " — " + formatTime(s.seconds),
-                    style: { width: pct + "%", background: s.color }
+                    title: s.title + " \u2014 " + formatTimeDetailed(s.startAt) + "\u2013" + formatTimeDetailed(s.endAt) + " (click to jump)",
+                    style: { width: pct + "%", background: s.color },
+                    onClick: function() { jumpToSection(s); }
                   }, hoverProps(i)),
                     (isHovered || pct > 8) && h("span", null, s.title)
                   );
-                })
+                }),
+                targetState === "over" && h("div", { className: "over-zone", style: { left: targetPct + "%" } }),
+                hasTarget && targetPct < 100 && h("div", { className: "target-line", style: { left: targetPct + "%" } })
               ),
               h("div", { className: "ticks" },
                 h("span", null, "0:00"),
-                totalSeconds > 30 && h("span", null, formatTimeDetailed(totalSeconds / 2)),
-                h("span", null, formatTimeDetailed(totalSeconds))
+                !hasTarget && totalSeconds > 30 && h("span", null, formatTimeDetailed(totalSeconds / 2)),
+                h("span", { style: hasTarget && targetPct >= 100 ? { color: "var(--text)", fontWeight: 600 } : null }, formatTimeDetailed(scale) + (hasTarget && targetPct >= 100 ? " target" : "")),
+                // Label the target marker unless it would collide with the end labels
+                hasTarget && targetPct >= 12 && targetPct <= 88 && h("span", { className: "target-tick", style: { left: targetPct + "%", transform: "translateX(-50%)" } }, "target " + formatTimeDetailed(target))
               )
             )
           ),
@@ -511,7 +656,11 @@ function ScriptTimer() {
                 const isLong = s.seconds > totalSeconds * 0.35 && analysisData.length > 2;
                 const isShort = s.seconds < 5 && totalSeconds > 30;
 
-                return h("li", Object.assign({ key: i, className: "row" + (isHovered ? " active" : "") }, hoverProps(i)),
+                return h("li", Object.assign({
+                  key: i,
+                  className: "row" + (isHovered ? " active" : ""),
+                  onClick: function(e) { if (!e.target.closest("input, button")) jumpToSection(s); }
+                }, hoverProps(i)),
                   h("div", { className: "row-bar", style: { background: s.color } }),
                   h("div", { style: { minWidth: 0 } },
                     h("div", { className: "row-title" },
@@ -520,6 +669,7 @@ function ScriptTimer() {
                       isShort && h("span", { className: "flag thin", title: "Under 5 seconds" }, "THIN")
                     ),
                     h("div", { className: "row-meta" },
+                      h("button", { className: "timecode", onClick: function() { jumpToSection(s); }, title: "Jump to this section in the script", "aria-label": "Jump to " + s.title + " in the script" }, formatTimeDetailed(s.startAt) + "\u2013" + formatTimeDetailed(s.endAt)),
                       h("span", null, s.words + " words"),
                       h("div", { className: "share" }, h("div", { style: { width: share + "%", background: s.color } })),
                       h("span", null, share.toFixed(1) + "%")
