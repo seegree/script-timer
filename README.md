@@ -1,44 +1,39 @@
-# Script Timer — GitHub Pages Deployment
+# Script Timer
 
-A zero-backend tool for analyzing script section timing at 150 words per minute.
+Paste a script and see how long it will take to read aloud, section by section.
 
-## Quick Deploy (5 minutes)
+**Open it:** https://seegree.github.io/script-timer/
 
-### 1. Create a GitHub account (skip if you have one)
-- Go to [github.com](https://github.com) and sign up
+It runs entirely in your browser: no account, no install, and your script is never uploaded.
 
-### 2. Create a new repository
-- Click the **+** button (top right) → **New repository**
-- Name it: `script-timer`
-- Set it to **Public**
-- Check **"Add a README file"**
-- Click **Create repository**
+## Use
 
-### 3. Upload the app
-- In your new repo, click **Add file** → **Upload files**
-- Drag and drop the `index.html` file from this folder
-- Click **Commit changes**
+1. Paste your script into the box on the left, or click **Load sample** to try it.
+2. The right side shows the total runtime and a breakdown for each section.
+3. Set the speaking rate with the **WPM** control in the header (60–300, default 150 words per minute). Double-click it to reset. The rate is remembered next time.
 
-### 4. Enable GitHub Pages
-- Go to **Settings** (tab at top of repo)
-- In the left sidebar, click **Pages**
-- Under "Source," select **Deploy from a branch**
-- Under "Branch," select **main** and **/ (root)**
-- Click **Save**
-- Wait 1-2 minutes
+## How sections are found
 
-### 5. Get your link
-- Your app will be live at: `https://YOUR-USERNAME.github.io/script-timer`
-- Share this link with your team — no login or install needed
+A new section starts at any line that is:
 
-## Updating the app
-To update, just go to your repo, click on `index.html`, click the pencil icon (edit), paste the new version, and commit. The site updates automatically within a minute or two.
+- a Markdown heading, such as `# Intro`
+- written in ALL CAPS, such as `KEY FEATURES`
+- ended with a colon, such as `Demo:`
+- wrapped in brackets, such as `[Call to action]`
 
-## Embedding in Confluence
-Once deployed, you can embed it in a Confluence page:
-1. Edit a Confluence page
-2. Type `/iframe` or insert an **iframe macro**
-3. Paste your GitHub Pages URL
-4. Save the page
+Text before the first heading becomes "Untitled Section". If no headings are found, the whole script is treated as one section.
 
-Your team can now access the tool directly from Confluence while it's hosted on GitHub Pages.
+## Reading the breakdown
+
+- Each section shows its word count, its runtime, and its share of the total.
+- The **timecode** shows where the section starts and ends. Click it to jump to that section in the script.
+- Click a section's title to rename it.
+- **HEAVY** marks a section over 35% of the total runtime. **THIN** marks one under 5 seconds.
+
+## Target length
+
+Enter a target such as `1:30`, `90`, or `1m30s`. The app shows how far over or under the script runs, and roughly how many words to cut or add.
+
+## Run it locally
+
+Open `index.html` in a current browser. It loads React from a CDN, so it needs an internet connection.
